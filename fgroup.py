@@ -1,18 +1,24 @@
-class Group:
-    def __init__(self, elements, operation):
-        self.elements = elements  # Set of elements in the group
-        self.operation = operation  # Operation that combines two elements
+import operator
+
+class Group():
+    def __init__(self, elements: set(), op: operator, mod: int):
+        self.elements = elements
+        self.operation = op
+        self.modulus = mod
         self.identity_element = None
         self.inverse_elements = {}
         self.why_not_group = None
 
+    def _mod_operation(self, a: int, b: int):
+        return self.operation(a, b) % self.modulus
+    
     def is_group(self):
         # Check closure property
         for a in self.elements:
             for b in self.elements:
-                result = self.operation(a, b)
+                result = self._mod_operation(a, b)
                 if result not in self.elements:
-                    print(a, b)
+                    # print(a, b)
                     self.why_not_group = [1, a, b]
                     return False
 
@@ -20,7 +26,7 @@ class Group:
         for a in self.elements:
             for b in self.elements:
                 for c in self.elements:
-                    if self.operation(self.operation(a, b), c) != self.operation(a, self.operation(b, c)):
+                    if self._mod_operation(self._mod_operation(a, b), c) != self._mod_operation(a, self._mod_operation(b, c)):
                         self.why_not_group = [2, a, b]
                         return False
 
@@ -29,7 +35,7 @@ class Group:
         for element in self.elements:
             has_identity = True
             for other_element in self.elements:
-                if self.operation(element, other_element) != other_element or self.operation(other_element, element) != other_element:
+                if self._mod_operation(element, other_element) != other_element or self._mod_operation(other_element, element) != other_element:
                     has_identity = False
                     break
             if has_identity:
@@ -53,7 +59,7 @@ class Group:
         subgroups = []
         for subset in self.get_all_subsets():
             if self.is_group_subset(subset):
-                subgroups.append(Group(subset, self.operation))
+                subgroups.append(Group(subset, self.operation, self.modulus))
         return subgroups
 
     def get_all_subsets(self):
@@ -63,12 +69,12 @@ class Group:
         return subsets
 
     def is_group_subset(self, subset):
-        subgroup = Group(subset, self.operation)
+        subgroup = Group(subset, self.operation, self.modulus)
         return subgroup.is_group()
 
     def find_inverse(self, element):
         for other_element in self.elements:
-            if self.operation(element, other_element) == self.identity_element and self.operation(other_element, element) == self.identity_element:
+            if self._mod_operation(element, other_element) == self.identity_element and self._mod_operation(other_element, element) == self.identity_element:
                 return other_element
         return None
 
@@ -81,9 +87,9 @@ class Group:
 
         while current_element not in subgroup_elements:
             subgroup_elements.add(current_element)
-            current_element = self.operation(current_element, element)
+            current_element = self._mod_operation(current_element, element)
 
-        return Group(subgroup_elements, self.operation)
+        return Group(subgroup_elements, self.operation, self.modulus)
 
     def is_cyclic(self):
         for element in self.elements:
@@ -103,7 +109,7 @@ class Group:
         power = 1
 
         while current_element != self.identity_element:
-            current_element = self.operation(current_element, element)
+            current_element = self._mod_operation(current_element, element)
             power += 1
 
         return power
@@ -113,7 +119,7 @@ class Group:
         for a in self.elements:
             row = {}
             for b in self.elements:
-                result = self.operation(a, b)
+                result = self._mod_operation(a, b)
                 row[b] = result
             table[a] = row
         return table
@@ -138,7 +144,7 @@ class Group:
         for a in self.elements:
             row = "| " + str(a) + " | "
             for b in self.elements:
-                result = self.operation(a, b)
+                result = self._mod_operation(a, b)
                 row += str(result) + " | "
             table.append(row)
 
@@ -150,7 +156,7 @@ class Group:
             is_normal = True
             for element in self.elements:
                 for subgroup_element in subgroup.elements:
-                    conjugation = self.operation(self.operation(element, subgroup_element), self.inverse(element))
+                    conjugation = self._mod_operation(self._mod_operation(element, subgroup_element), self.inverse(element))
                     if conjugation not in subgroup.elements:
                         is_normal = False
                         break
@@ -163,7 +169,7 @@ class Group:
     def is_abelian(self):
         for a in self.elements:
             for b in self.elements:
-                if self.operation(a, b) != self.operation(b, a):
+                if self._mod_operation(a, b) != self._mod_operation(b, a):
                     return False
         return True
 
@@ -171,6 +177,6 @@ class Group:
         permutation_list = []
         element_to_index = {element: index for index, element in enumerate(self.elements)}
         for element in self.elements:
-            permutation = [element_to_index[self.operation(element, other_element)] for other_element in self.elements]
+            permutation = [element_to_index[self._mod_operation(element, other_element)] for other_element in self.elements]
             permutation_list.append(permutation)
         return permutation_list
